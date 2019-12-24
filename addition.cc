@@ -96,7 +96,8 @@ void show_sum(const int a, const int b, const int incr, char box_hz_char, char b
     const auto a_rem = a % incr;
     const auto b_rem = b % incr;
     const auto sum = a + b;
-    const auto [no_incr, rem] = divide(sum, incr);
+    const auto rem = a_rem + b_rem;
+    const auto no_incr = sum / incr;
     
     const auto a_boxes = get_no_boxes(a, incr);
     const auto b_boxes = get_no_boxes(b, incr);
@@ -105,7 +106,7 @@ void show_sum(const int a, const int b, const int incr, char box_hz_char, char b
     
     const auto [incr_box_line, incr_digits_line] = generate_lines(incr, box_hz_char, box_vt_char);
     const auto [sum_incr_box_line, sum_incr_digits_line] = generate_lines(2 * incr, box_hz_char, box_vt_char);
-    const auto [rem_box_line, rem_digits_line] = generate_lines(a_rem + b_rem, box_hz_char, box_vt_char);
+    const auto [rem_box_line, rem_digits_line] = generate_lines(rem, box_hz_char, box_vt_char);
     
     const string gap(1, '\t');
     
@@ -125,7 +126,6 @@ void show_sum(const int a, const int b, const int incr, char box_hz_char, char b
 void show_add(int a, int b, char box_hz_char = '-', char box_vt_char = '|') {
     const int incr = 10;
     const auto no_boxes = get_no_boxes(a, b, incr);
-    cout << "no_boxes: " << no_boxes.first << ' ' << no_boxes.second <<'\n';
     
     cout << "\033[1;32m";
     show_n(a, incr, no_boxes, box_hz_char, box_vt_char);
