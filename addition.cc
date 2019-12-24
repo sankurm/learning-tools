@@ -127,7 +127,7 @@ void show_add(int a, int b, char box_hz_char = '-', char box_vt_char = '|') {
     const int incr = 10;
     const auto no_boxes = get_no_boxes(a, b, incr);
     
-    cout << "\033[1;32m";
+    cout << "\033[1;95m";
     show_n(a, incr, no_boxes, box_hz_char, box_vt_char);
     cout << '\n';
     
