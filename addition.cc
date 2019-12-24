@@ -7,8 +7,6 @@
 #include <functional>
 using namespace std;
 
-const string gap(1, '\t');
-
 auto divide(int dividend, int divisor) {
     return make_pair(dividend / divisor, dividend % divisor);
 }
@@ -24,16 +22,12 @@ box_counts get_no_boxes(int n, int incr) {
     return {quot, rem? 1: 0};
 }
 
-box_counts max(box_counts a, box_counts b, box_counts c) {
-    return {max(max(a.first, b.first), c.first), max(max(a.second, b.second), c.second)};
-}
-
 box_counts get_no_boxes(int a, int b, int incr) {
     const auto a_boxes = get_no_boxes(a, incr);
     const auto b_boxes = get_no_boxes(b, incr);
     const auto sum_boxes = get_no_boxes(a + b, 2 * incr);
-    cout << a_boxes.second << b_boxes.second << sum_boxes.second << '\n';
-    return max(a_boxes, b_boxes, sum_boxes);
+    return {max(max(a_boxes.first, b_boxes.first), sum_boxes.first), 
+        max(a_boxes.second, b_boxes.second)};
 }
 
 auto generate_box_line(int n, char box_hz_char) {
@@ -52,34 +46,43 @@ auto generate_lines(int n, char box_hz_char, char box_vt_char) {
 
 using repeat_string = pair<int, const string&>;
 
-void draw_box(box_counts no_boxes, const repeat_string& incr_line, 
-        const repeat_string& rem_line, auto out_it) {
-    generate_n(out_it, no_boxes.first - incr_line.first, []{ return ""s; });
-    generate_n(out_it, incr_line.first, [&]{ return incr_line.second; });
-    if (no_boxes.second) {
-        *out_it++ = rem_line.second;
-    }
+void draw_box(box_counts no_boxes, const repeat_string& incr_line, const repeat_string& rem_line, auto out_it) {
+    fill_n(out_it, no_boxes.first - incr_line.first, ""s);
+    fill_n(out_it, incr_line.first, incr_line.second);
+    if (no_boxes.second)
+        *out_it++ = rem_line.first? rem_line.second: "";
     *out_it++ = "\n";
 }
 
-void draw_digits(int n, box_counts no_boxes, const repeat_string& incr_line, 
-        const repeat_string& rem_line, auto out_it) {
-    generate_n(out_it, no_boxes.first - incr_line.first, []{ return ""s; });
-    generate_n(out_it, incr_line.first, [&]{ return incr_line.second; });
-    if (no_boxes.second) {
-        *out_it++ = rem_line.second;
-    }
+void draw_digits(int n, box_counts no_boxes, const repeat_string& incr_line, const repeat_string& rem_line, auto out_it) {
+    fill_n(out_it, no_boxes.first - incr_line.first, ""s);
+    fill_n(out_it, incr_line.first, incr_line.second);
+    if (no_boxes.second)
+        *out_it++ = rem_line.first? rem_line.second: "";
     *out_it++ = " = ";
     *out_it++ = to_string(n);
     *out_it++ = "\n";
 }
 
-void show_n(const int n, const int incr, const box_counts no_boxes, 
-        char box_hz_char, char box_vt_char) {
+void draw_sum_digits(int n, box_counts no_boxes, const repeat_string& incr_line, 
+        const repeat_string& sum_incr_line, const repeat_string& rem_line, 
+        auto out_it) {
+    fill_n(out_it, no_boxes.first, incr_line.second);
+    fill_n(out_it, no_boxes.second, sum_incr_line.second);
+    if (rem_line.first)
+        *out_it++ = rem_line.second;
+    *out_it++ = " = ";
+    *out_it++ = to_string(n);
+    *out_it++ = "\n";
+}
+
+void show_n(const int n, const int incr, const box_counts no_boxes, char box_hz_char, char box_vt_char) {
     const auto [no_incr, rem] = divide(n, incr);
     
     const auto [incr_box_line, incr_digits_line] = generate_lines(incr, box_hz_char, box_vt_char);
     const auto [rem_box_line, rem_digits_line] = generate_lines(rem, box_hz_char, box_vt_char);
+    
+    const string gap(1, '\t');
     
     ostream_iterator<string> out(cout, gap.c_str());
     
@@ -89,12 +92,40 @@ void show_n(const int n, const int incr, const box_counts no_boxes,
     draw_box(no_boxes, {no_incr, incr_box_line}, {rem? 1: 0, rem_box_line}, out);
 }
 
+void show_sum(const int a, const int b, const int incr, char box_hz_char, char box_vt_char) {
+    const auto a_rem = a % incr;
+    const auto b_rem = b % incr;
+    const auto sum = a + b;
+    const auto [no_incr, rem] = divide(sum, incr);
+    
+    const auto a_boxes = get_no_boxes(a, incr);
+    const auto b_boxes = get_no_boxes(b, incr);
+    const box_counts sum_boxes = {abs(a_boxes.first - b_boxes.first), 
+        min(a_boxes.first, b_boxes.first)};
+    
+    const auto [incr_box_line, incr_digits_line] = generate_lines(incr, box_hz_char, box_vt_char);
+    const auto [sum_incr_box_line, sum_incr_digits_line] = generate_lines(2 * incr, box_hz_char, box_vt_char);
+    const auto [rem_box_line, rem_digits_line] = generate_lines(a_rem + b_rem, box_hz_char, box_vt_char);
+    
+    const string gap(1, '\t');
+    
+    ostream_iterator<string> out(cout, gap.c_str());
+    
+    *out++ = "";    //start with an offset of gap
+    draw_box({sum_boxes.first + sum_boxes.second, rem? 1: 0}, 
+        {sum_boxes.first + sum_boxes.second, incr_box_line}, 
+        {rem? 1: 0, rem_box_line}, out);
+    draw_sum_digits(sum, sum_boxes, {sum_boxes.first, incr_digits_line}, 
+        {sum_boxes.second, sum_incr_digits_line}, {rem? 1: 0, rem_digits_line}, out);
+    draw_box({sum_boxes.first + sum_boxes.second, rem? 1: 0}, 
+        {sum_boxes.first + sum_boxes.second, incr_box_line}, 
+        {rem? 1: 0, rem_box_line}, out);
+}
+
 void show_add(int a, int b, char box_hz_char = '-', char box_vt_char = '|') {
     const int incr = 10;
-    const int sum_incr = 2 * incr;
-    
     const auto no_boxes = get_no_boxes(a, b, incr);
-    cout << "no_boxes: " << no_boxes.first << ' ' << no_boxes.second << '\n';
+    cout << "no_boxes: " << no_boxes.first << ' ' << no_boxes.second <<'\n';
     
     cout << "\033[1;32m";
     show_n(a, incr, no_boxes, box_hz_char, box_vt_char);
@@ -105,7 +136,7 @@ void show_add(int a, int b, char box_hz_char = '-', char box_vt_char = '|') {
     cout << '\n';
     
     cout << "\033[1;31m";
-    show_n(a + b, sum_incr, no_boxes, box_hz_char, box_vt_char);
+    show_sum(a, b, incr, box_hz_char, box_vt_char);
     cout << "\n\033[0m";
 }
 
@@ -126,7 +157,7 @@ const string& lookup_name(const fun_2_num f) {
 template<typename F>
 void loop_2_nums_activity(F&& activity) {
     while (1) {
-        cout << "Enter the numbers to " << lookup_name(activity) << ": ";
+        cout << "Enter the numbers to " << lookup_name(activity)/*activity_name*/ << ": ";
         int a, b;
         cin >> a >> b;
         if (cin.fail()) {
